@@ -25,6 +25,8 @@ namespace DioCli
                     Parity = Parity.None,
                     StopBits = StopBits.One,
                 });
+
+                RS232.Purge(port);
             }
             catch(ArgumentException)
             {

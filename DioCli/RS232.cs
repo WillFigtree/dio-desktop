@@ -107,5 +107,24 @@ namespace DioCli
                 Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
             }
         }
+
+        public static void Purge(int portNum)
+        {
+            if (!_ports.TryGetValue(portNum, out var hPort))
+            {
+                throw new ArgumentException($"Port {portNum} not opened.", nameof(portNum));
+            }
+
+            //flags for clearing rx and tx buffers
+            //https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-purgecomm
+            const uint PURGE_TXCLEAR = 0x0004;
+            const uint PURGE_RXCLEAR = 0x0008;
+            const uint flags = PURGE_TXCLEAR | PURGE_RXCLEAR;
+
+            if (!RS232PInvoke.PurgeComm(hPort, flags))
+            {
+                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+            }
+        }
     }
 }

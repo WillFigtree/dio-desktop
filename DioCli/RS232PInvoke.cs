@@ -53,5 +53,11 @@ namespace DioCli
         [DllImport(Kernel32DLL, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool WriteFile(IntPtr hFile, byte[] lpBuffer, uint nNumberOfBytesToWrite, out uint lpNumberOfBytesWritten, IntPtr lpOverlapped);
+
+        //https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-purgecomm
+        //https://www.pinvoke.net/default.aspx/kernel32.purgecomm
+        [DllImport(Kernel32DLL, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool PurgeComm(IntPtr hFile, uint dwFlags);
     }
 }
