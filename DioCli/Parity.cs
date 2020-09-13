@@ -1,0 +1,12 @@
+﻿// https://www.pinvoke.net/default.aspx/Structures/DCB.html
+namespace DioCli
+{
+    public enum Parity : byte
+    {
+        None = 0,
+        Odd = 1,
+        Even = 2,
+        Mark = 3,
+        Space = 4,
+    }
+}
