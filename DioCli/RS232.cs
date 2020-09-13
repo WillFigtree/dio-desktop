@@ -79,7 +79,7 @@ namespace DioCli
             RS232PInvoke.CloseHandle(hPort);
         }
 
-        public static int ReadPort(int portNum, byte[] buffer)
+        public static int Read(int portNum, byte[] buffer)
         {
             // Return 0 if the port isn't found
             if (!_ports.TryGetValue(portNum, out var hPort))
@@ -90,6 +90,22 @@ namespace DioCli
             // Read bytes
             RS232PInvoke.ReadFile(hPort, buffer, (uint)buffer.Length, out var n, IntPtr.Zero);
             return (int)n;
+        }
+
+        public static void Write(int portNum, byte[] buffer)
+        {
+            if (buffer == null) return;
+
+            if (!_ports.TryGetValue(portNum, out var hPort))
+            {
+                throw new ArgumentException($"Port {portNum} not opened.", nameof(portNum));
+            }
+
+            // Write bytes
+            if(!RS232PInvoke.WriteFile(hPort, buffer, (uint)buffer.Length, out var _, IntPtr.Zero))
+            {
+                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+            }
         }
     }
 }
