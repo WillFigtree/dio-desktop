@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -7,9 +6,7 @@ namespace DioCli
 {
     public static class RS232
     {
-        private readonly static Dictionary<int, IntPtr> _ports = new Dictionary<int, IntPtr>();
-
-        public static void OpenPort(int portNum, RS232Config config)
+        public static IntPtr OpenPort(int portNum, RS232Config config)
         {
             // Validate inputs
             if (portNum < 0 || portNum > 255)
@@ -69,37 +66,32 @@ namespace DioCli
                 throw new Exception("Could not configure COM port timeouts.");
             }
 
-            // Keep track of the open port
-            _ports.Add(portNum, hPort);
+            // Return port handle for caller
+            return hPort;
         }
 
-        public static void ClosePort(int portNum)
+        public static void ClosePort(IntPtr hPort)
         {
-            if (!_ports.Remove(portNum, out var hPort)) return;
-            RS232PInvoke.CloseHandle(hPort);
-        }
-
-        public static int Read(int portNum, byte[] buffer)
-        {
-            // Return 0 if the port isn't found
-            if (!_ports.TryGetValue(portNum, out var hPort))
+            if (!RS232PInvoke.CloseHandle(hPort))
             {
-                return 0;
+                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+            }
+        }
+
+        public static int Read(IntPtr hPort, byte[] buffer)
+        {
+            // Read bytes
+            if (!RS232PInvoke.ReadFile(hPort, buffer, (uint)buffer.Length, out var n, IntPtr.Zero))
+            {
+                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
             }
 
-            // Read bytes
-            RS232PInvoke.ReadFile(hPort, buffer, (uint)buffer.Length, out var n, IntPtr.Zero);
             return (int)n;
         }
 
-        public static void Write(int portNum, byte[] buffer)
+        public static void Write(IntPtr hPort, byte[] buffer)
         {
             if (buffer == null) return;
-
-            if (!_ports.TryGetValue(portNum, out var hPort))
-            {
-                throw new ArgumentException($"Port {portNum} not opened.", nameof(portNum));
-            }
 
             // Write bytes
             if(!RS232PInvoke.WriteFile(hPort, buffer, (uint)buffer.Length, out var _, IntPtr.Zero))
@@ -108,13 +100,8 @@ namespace DioCli
             }
         }
 
-        public static void Purge(int portNum)
+        public static void Purge(IntPtr hPort)
         {
-            if (!_ports.TryGetValue(portNum, out var hPort))
-            {
-                throw new ArgumentException($"Port {portNum} not opened.", nameof(portNum));
-            }
-
             //flags for clearing rx and tx buffers
             //https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-purgecomm
             const uint PURGE_TXCLEAR = 0x0004;
