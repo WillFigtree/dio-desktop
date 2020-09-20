@@ -14,16 +14,27 @@ namespace DioCli
 
             // Open the DIO serial port
             var device = new RS232Device(port);
-            if (TryOpenDevice(device))
+
+            var cts = new CancellationTokenSource(10000);    // Cancel after 10 seconds
+            var run = true;
+            while (run)
             {
-                // Run DIO communications
-                var cts = new CancellationTokenSource(5000);    // Cancel after 5 seconds
-                try
+                if (TryOpenDevice(device))
                 {
-                    await device.RunAsync(cts.Token);
+                    // Run DIO communications
+                    try
+                    {
+                        await device.RunAsync(cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Stop running on cancellation
+                        run = false;
+                    }
+                    catch (System.Runtime.InteropServices.COMException) { Console.WriteLine("COM exception! Restarting"); }
                 }
-                catch (OperationCanceledException) { }
             }
+
 
             // Shut down
             device.Close();

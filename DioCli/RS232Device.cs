@@ -85,15 +85,19 @@ namespace DioCli
             }
         }
 
-        // TODO: provide an internal signal so that when one loop completes the other loop is also completed.
-        // We don't want to get stuck here forever if an exception is thrown in e.g. the rx loop and the tx loop is fine
-        // Use CancellationTokenSource.CreateLinkedTokenSource()
-        public Task RunAsync(CancellationToken ct)
+        public async Task RunAsync(CancellationToken ct)
         {
-            var rxTask = RecieveLoopAsync(ct);
-            var txTask = TransmitLoopAsync(ct);
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-            return Task.WhenAll(rxTask, txTask);
+            var rxTask = RecieveLoopAsync(cts.Token);
+            var txTask = TransmitLoopAsync(cts.Token);
+
+            // Cancel all tasks if one stops (exceptions aren't rethrown by WhenAny)
+            await Task.WhenAny(rxTask, txTask).ConfigureAwait(false);
+            cts.Cancel();
+
+            // Wait for all tasks to stop before returning control and/or throwing exceptions
+            await Task.WhenAll(rxTask, txTask).ConfigureAwait(false);
         }
 
         private async Task TransmitLoopAsync(CancellationToken ct)
